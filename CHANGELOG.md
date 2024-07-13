@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v6.2.0 - 2024.07.13 16
+* refactor!: update some swtich options prefiex to `will` form `is`
+* refactor: change delimiter in log format
+* build: bump up dependencies
+* chore: improve develop environments
+
+
 ## v6.1.0 - 2023.12.07 13
 * tweak enviroment
 * bump up dependencies

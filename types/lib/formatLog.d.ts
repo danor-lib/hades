@@ -3,8 +3,8 @@ export default formatLog;
 /**
  *
  * @param {import('log4js').LoggingEvent} event
- * @param {boolean} isHighlight
+ * @param {boolean} willHighlight
  * @param {import('@nuogz/i18n').TranslatorWithGlobalLocale} T
  * @returns
  */
-declare function formatLog(event: import('log4js').LoggingEvent, isHighlight: boolean, T: import('@nuogz/i18n').TranslatorWithGlobalLocale): string[];
+declare function formatLog(event: import("log4js").LoggingEvent, willHighlight: boolean, T: import("@nuogz/i18n").TranslatorWithGlobalLocale): string[];

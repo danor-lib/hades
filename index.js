@@ -20,15 +20,7 @@ const T = TT('@nuogz/hades');
 
 
 
-/**
- * Hades Option
- * @typedef {Object} HadesOption
- * @property {number} sizeLogFileMax
- * @property {boolean} isHighlight
- * @property {boolean} isOutputInited
- * @property {boolean} isOutputDirLog
- * @property {boolean} isInitImmediate
- */
+/** @typedef {import('./bases.d.ts').HadesOption} HadesOption */
 
 
 /**
@@ -59,10 +51,10 @@ const parseFlagsEnv = () => {
 	const flagInitImmediate = flagsRaw.find(f => /^!?InitImmediate$/i.test(f));
 
 	return {
-		isHighlight: flagHighlight === undefined ? void 0 : !flagHighlight.startsWith('!'),
-		isOutputInited: flagOutputInited === undefined ? void 0 : !flagOutputInited.startsWith('!'),
-		isOutputDirLog: flagOutputDirLog === undefined ? void 0 : !flagOutputDirLog.startsWith('!'),
-		isInitImmediate: flagInitImmediate === undefined ? void 0 : !flagInitImmediate.startsWith('!'),
+		willHighlight: flagHighlight === undefined ? void 0 : !flagHighlight.startsWith('!'),
+		willOutputInitInfo: flagOutputInited === undefined ? void 0 : !flagOutputInited.startsWith('!'),
+		willOutputLogDir: flagOutputDirLog === undefined ? void 0 : !flagOutputDirLog.startsWith('!'),
+		willInitImmediate: flagInitImmediate === undefined ? void 0 : !flagInitImmediate.startsWith('!'),
 	};
 };
 
@@ -139,25 +131,25 @@ export default class Hades {
 
 
 	/**
-	 * detect use colorful highhight to render logs
+	 * will use styling highlight to render logs or not
 	 * @type {boolean}
 	 */
-	isHighlight;
+	willHighlight;
 	/**
 	 * detect output the initial result after init
 	 * @type {boolean}
 	 */
-	isOutputInited;
+	willOutputInitInfo;
 	/**
 	 * detect output the dir of logs
 	 * @type {boolean}
 	 */
-	isOutputDirLog;
+	willOutputLogDir;
 	/**
 	 * detect init logger immediately when new instance
 	 * @type {boolean}
 	 */
-	isInitImmediate;
+	willInitImmediate;
 	/**
 	 * is inited logger or not
 	 * @type {boolean}
@@ -192,20 +184,20 @@ export default class Hades {
 
 		const flags = parseFlagsEnv();
 
-		this.isHighlight = option?.isHighlight ?? flags.isHighlight ?? true;
-		this.isOutputInited = option?.isOutputInited ?? flags.isOutputInited ?? true;
-		this.isOutputDirLog = option?.isOutputDirLog ?? flags.isOutputDirLog ?? false;
-		this.isInitImmediate = option?.isInitImmediate ?? flags.isInitImmediate ?? true;
+		this.willHighlight = option?.willHighlight ?? flags.willHighlight ?? true;
+		this.willOutputInitInfo = option?.willOutputInitInfo ?? flags.willOutputInitInfo ?? true;
+		this.willOutputLogDir = option?.willOutputLogDir ?? flags.willOutputLogDir ?? false;
+		this.willInitImmediate = option?.willInitImmediate ?? flags.willInitImmediate ?? true;
 		this.templateTime = option?.templateTime ?? flags.templateTime ?? 'YY-MM-DD HH:mm:ss:SSS';
 
 
-		if(this.isInitImmediate) { this.init(); }
+		if(this.willInitImmediate) { this.init(); }
 	}
 
 
 	/** init Hades */
 	init() {
-		const { name, level, dirLog, isHighlight, isOutputInited, isOutputDirLog } = this;
+		const { name, level, dirLog, willHighlight, willOutputInitInfo, willOutputLogDir } = this;
 
 
 		/** @type {Log4JS.Configuration} */
@@ -217,9 +209,9 @@ export default class Hades {
 		const nameAppenderConsole = `${name}-console`;
 		configure.appenders[nameAppenderConsole] = {
 			type: moduleAppenderConsole,
-			isHighlight,
+			willHighlight,
 			T,
-			handle: (event, isHighlight, T) => formatLog(event, isHighlight, T),
+			handle: (event, willHighlightScoped, TScoped) => formatLog(event, willHighlightScoped, TScoped),
 		};
 		appenders.push(nameAppenderConsole);
 
@@ -229,9 +221,9 @@ export default class Hades {
 			configure.appenders[nameAppenderFile] = {
 				type: moduleAppenderFile,
 				path: resolve(dirLog, name + '.log'),
-				isHighlight, maxLogSize: this.sizeLogFileMax, eol: '\n',
+				willHighlight, maxLogSize: this.sizeLogFileMax, eol: '\n',
 				T,
-				handle: (event, isHighlight, T) => formatLog(event, isHighlight, T)[0],
+				handle: (event, willHighlightScoped, TScoped) => formatLog(event, willHighlightScoped, TScoped)[0],
 			};
 			appenders.push(nameAppenderFile);
 
@@ -240,9 +232,9 @@ export default class Hades {
 			configure.appenders[nameAppenderFileStack] = {
 				type: moduleAppenderFile,
 				path: resolve(dirLog, name + '.stack.log'),
-				isHighlight, maxLogSize: this.sizeLogFileMax, eol: '\n',
+				willHighlight, maxLogSize: this.sizeLogFileMax, eol: '\n',
 				T: (key, options) => T(key, options),
-				handle: (event, isHighlight, T) => formatLog(event, isHighlight, T)[1],
+				handle: (event, willHighlightScoped, TScoped) => formatLog(event, willHighlightScoped, TScoped)[1],
 			};
 			appenders.push(nameAppenderFileStack);
 		}
@@ -256,8 +248,8 @@ export default class Hades {
 		this.isInited = true;
 
 
-		if(isOutputInited) {
-			if(dirLog && isOutputDirLog) {
+		if(willOutputInitInfo) {
+			if(dirLog && willOutputLogDir) {
 				this.info(T('name'), T('init'), '✔ ', `${T('init')}~{${dirLog}}`);
 			}
 			else {
@@ -274,8 +266,8 @@ export default class Hades {
 	 * @returns {Promise<Hades>}
 	 */
 	async reload() {
-		return new Promise((resolve, reject) =>
-			Log4JS.shutdown(error => error ? resolve(this.init()) : reject(error))
+		return new Promise((resolver, rejecter) =>
+			Log4JS.shutdown(error => error ? resolver(this.init()) : rejecter(error))
 		);
 	}
 

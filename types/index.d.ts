@@ -1,12 +1,4 @@
-/**
- * Hades Option
- * @typedef {Object} HadesOption
- * @property {number} sizeLogFileMax
- * @property {boolean} isHighlight
- * @property {boolean} isOutputInited
- * @property {boolean} isOutputDirLog
- * @property {boolean} isInitImmediate
- */
+/** @typedef {import('./bases.d.ts').HadesOption} HadesOption */
 /**
  * Log4JS Total Configuration
  * @type {Log4JS.Configuration}
@@ -35,7 +27,7 @@ export default class Hades {
      * @param {HadesOption} [option]
      * @returns {Log4JS.Logger}
      */
-    constructor(name?: string | undefined, level?: string | undefined, dirLog?: string | undefined, option?: HadesOption | undefined);
+    constructor(name?: string | undefined, level?: string | undefined, dirLog?: string | undefined, option?: import("./bases.d.ts").HadesOption | undefined);
     /**
      * logger name (file name by default)
      * @type {string}
@@ -62,25 +54,25 @@ export default class Hades {
      */
     templateTime: string;
     /**
-     * detect use colorful highhight to render logs
+     * will use styling highlight to render logs or not
      * @type {boolean}
      */
-    isHighlight: boolean;
+    willHighlight: boolean;
     /**
      * detect output the initial result after init
      * @type {boolean}
      */
-    isOutputInited: boolean;
+    willOutputInitInfo: boolean;
     /**
      * detect output the dir of logs
      * @type {boolean}
      */
-    isOutputDirLog: boolean;
+    willOutputLogDir: boolean;
     /**
      * detect init logger immediately when new instance
      * @type {boolean}
      */
-    isInitImmediate: boolean;
+    willInitImmediate: boolean;
     /**
      * is inited logger or not
      * @type {boolean}
@@ -355,14 +347,5 @@ export default class Hades {
      */
     fatalE(code: number, where: string, what: string, ...infos: any[]): void;
 }
-/**
- * Hades Option
- */
-export type HadesOption = {
-    sizeLogFileMax: number;
-    isHighlight: boolean;
-    isOutputInited: boolean;
-    isOutputDirLog: boolean;
-    isInitImmediate: boolean;
-};
+export type HadesOption = import("./bases.d.ts").HadesOption;
 import Log4JS from 'log4js';

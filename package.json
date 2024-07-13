@@ -1,12 +1,12 @@
 {
 	"name": "@nuogz/hades",
-	"version": "6.1.0",
+	"version": "6.2.0",
 	"description": "Log library based on log4js-node",
 	"author": "DanoR",
 	"license": "LGPL-3.0-or-later",
 	"repository": {
 		"type": "git",
-		"url": "github:nuogz/hades"
+		"url": "git+https://github.com/nuogz/hades.git"
 	},
 	"private": false,
 	"type": "module",
@@ -15,31 +15,36 @@
 	],
 	"sideEffects": false,
 	"engines": {
-		"node": ">=14.18.1"
+		"node": ">=20"
 	},
 	"main": "./index.js",
 	"files": [
 		"index.js",
+		"types/**",
 		"lib/**",
 		"locale/**",
 		"**/*.d.ts"
 	],
-	"typings": "./index.d.ts",
+	"typings": "./types/index.d.ts",
 	"scripts": {
-		"emitDeclaration": "tsc ./index.js --declaration --emitDeclarationOnly --moduleResolution nodenext --module nodenext --target esnext --experimentalDecorators --strict --allowJs --jsx preserve"
+		"declare": "tsc",
+		"postdeclare": "copy /Y bases.d.ts types"
 	},
 	"dependencies": {
-		"@nuogz/i18n": "^3.3.1",
+		"@nuogz/i18n": "^3.4.0",
 		"@nuogz/utility": "^1.8.1",
 		"chalk": "^5.3.0",
-		"dayjs": "^1.11.10",
+		"dayjs": "^1.11.11",
 		"log-update": "^6.0.0",
 		"log4js": "^6.9.1",
 		"streamroller": "^3.1.5"
 	},
 	"devDependencies": {
-		"@types/node": "^20.10.3",
-		"eslint": "^8.55.0",
-		"typescript": "^5.3.3"
+		"@eslint/js": "^9.7.0",
+		"@stylistic/eslint-plugin-js": "^2.3.0",
+		"@types/node": "^20.14.10",
+		"eslint": "^9.7.0",
+		"globals": "^15.8.0",
+		"typescript": "^5.5.3"
 	}
 }
