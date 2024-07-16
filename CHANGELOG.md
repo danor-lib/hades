@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v6.3.1 - 2024.07.16 16
+* revert: revert second delimiter in log format to `double space`
+
 ## v6.3.0 - 2024.07.16 11
 * feat: Hades now handles replacer when not highlighted.  
 	This allows the same text to be used in both highlighted and no-highlighted
