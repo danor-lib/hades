@@ -1,4 +1,4 @@
-export function highlight(string: string): string;
+export function highlight(string: string, willHighlight?: boolean | undefined): string;
 export default formatLog;
 /**
  *

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v6.3.0 - 2024.07.16 11
+* feat: Hades now handles replacer when not highlighted.  
+	This allows the same text to be used in both highlighted and no-highlighted
+* feat: new `i18next` formatter: `typeof`
+* refactor: Now `Hades` will add `i18next` formatters, no longer handled by `@nuogz/i18n`
+
+
 ## v6.2.0 - 2024.07.13 16
 * refactor!: update some swtich options prefiex to `will` form `is`
 * refactor: change delimiter in log format

@@ -20,6 +20,24 @@ const T = TT('@nuogz/hades');
 
 
 
+const globalTop = globalThis ?? global;
+const NI18N = globalTop.NI18N;
+
+
+const escapeFromHades = value => value?.toString?.()?.replace?.(/([~{}[\]])/g, '\\$1') ?? value;
+const escapeFromI18Next = NI18N.translator.interpolator.escape;
+
+
+NI18N.services.formatter.add('term', value => `~[${escapeFromHades(value)}]`);
+NI18N.services.formatter.add('value', value => `~{${escapeFromHades(value)}}`);
+NI18N.services.formatter.add('valueType', value => `~{${escapeFromI18Next(escapeFromHades(value))} <${typeof value}>}`);
+NI18N.services.formatter.add('valueTypeUnescape', value => `~{${escapeFromHades(value)} <${typeof value}>}`);
+NI18N.services.formatter.add('valueJSON', value => `~{${escapeFromI18Next(escapeFromHades(JSON.stringify(value)))}`);
+NI18N.services.formatter.add('valueJSONUnescape', value => `~{${escapeFromHades(JSON.stringify(value))}`);
+NI18N.services.formatter.add('typeof', value => typeof value);
+
+
+
 /** @typedef {import('./bases.d.ts').HadesOption} HadesOption */
 
 
