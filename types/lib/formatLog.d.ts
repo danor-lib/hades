@@ -4,7 +4,9 @@ export default formatLog;
  *
  * @param {import('log4js').LoggingEvent} event
  * @param {boolean} willHighlight
+ * @param {boolean} willColorfulLevel
+ * @param {string} templateTime
  * @param {import('@nuogz/i18n').TranslatorWithGlobalLocale} T
  * @returns
  */
-declare function formatLog(event: import("log4js").LoggingEvent, willHighlight: boolean, T: import("@nuogz/i18n").TranslatorWithGlobalLocale): string[];
+declare function formatLog(event: import("log4js").LoggingEvent, willHighlight: boolean | undefined, willColorfulLevel: boolean | undefined, templateTime: string | undefined, T: import("@nuogz/i18n").TranslatorWithGlobalLocale): string[];
