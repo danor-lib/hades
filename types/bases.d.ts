@@ -1,6 +1,6 @@
 import { AppenderModule, LoggingEvent } from "log4js";
 import Hades from "./index.js";
-import { TranslatorWithGlobalLocale } from "@nuogz/i18n";
+import { NamespacelizedLocalizedTranslator } from "@nuogz/i18n";
 
 
 
@@ -94,7 +94,7 @@ export type HadesOption = {
 export type BaseAppenderConfig = {
 	type: AppenderModule;
 	hades: Hades;
-	T: TranslatorWithGlobalLocale;
+	T: NamespacelizedLocalizedTranslator;
 	handle(event: LoggingEvent, config: BaseAppenderConfig): any;
 }
 

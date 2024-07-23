@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v7.0.2 - 2024.07.23 19
+* refactor: use new translator function to output initialization log
+* deps: bump up dependencies
+
+
 ## v7.0.1 - 2024.07.23 16
 * feat: new formatter `valueTypeof`
 * deps: bump up dependencies

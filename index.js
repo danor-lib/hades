@@ -16,7 +16,7 @@ import { loadI18NResource, TT } from '@nuogz/i18n';
 
 loadI18NResource('@nuogz/hades', resolvePath(dirname(fileURLToPath(import.meta.url)), 'locale'));
 
-const T = TT('@nuogz/hades');
+const { T, TS } = TT('@nuogz/hades');
 
 
 
@@ -273,7 +273,7 @@ export default class Hades {
 			type: moduleAppenderConsole,
 			hades: this,
 			T,
-			handle: (event, { hades, T: TScoped }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, TScoped),
+			handle: (event, { hades, T: Translator }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, Translator),
 		};
 		configure.appenders[nameAppenderConsole] = configAppenderConsole;
 		appenders.push(nameAppenderConsole);
@@ -287,7 +287,7 @@ export default class Hades {
 				type: moduleAppenderFile,
 				hades: this,
 				T,
-				handle: (event, { hades, T: TScoped }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, TScoped)[0],
+				handle: (event, { hades, T: Translator }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, Translator)[0],
 				path: resolvePath(dirLog, `${name}.log`)
 			};
 			configure.appenders[nameAppenderFile] = configAppenderFile;
@@ -321,10 +321,10 @@ export default class Hades {
 
 		if(willOutputInitInfo) {
 			if(dirLog && willOutputLogDir) {
-				this.info(T('name'), T('init'), '✔', `${T('init')}~{${dirLog}}`);
+				this.info(...TS('', 'name', 'init', '✔', `${T('path')}~{${dirLog}}`));
 			}
 			else {
-				this.info(T('name'), T('init'), '✔');
+				this.info(...TS('', 'name', 'init', '✔'));
 			}
 		}
 
