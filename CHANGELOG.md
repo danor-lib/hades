@@ -1,37 +1,42 @@
 # CHANGELOG
 
+## v7.0.1 - 2024.07.23 16
+* feat: new formatter `valueTypeof`
+* deps: bump up dependencies
+
+
 ## v7.0.0 - 2024.07.18 17
-* refactor!: Move `Hades` constructor params `name`, `level` `dirLog` into `HadesOption`
-* refactor!: Rename `HadesOption` `sizeFileLogMax` from `sizeLogFileMax`
-* refactor!: Rename environment variable `NENV_HADES_OPTIONS`, `NENV_HADES_NAME`, `NENV_HADES_LEVEL` info `NENV_HADES`
+* refactor!: move `Hades` constructor params `name`, `level` `dirLog` into `HadesOption`
+* refactor!: rename `HadesOption` `sizeFileLogMax` from `sizeLogFileMax`
+* refactor!: rename environment variable `NENV_HADES_OPTIONS`, `NENV_HADES_NAME`, `NENV_HADES_LEVEL` info `NENV_HADES`
 	* `NENV_HADES` is designed to use URL query string.
-* feat: Bew `Hades` method `where` and `what` for preset `where` and `what` in same code scope
-	* Preset feature corresponds to new classes `Melinoe` and `Zagreus`
-* feat: Bew `HadesOption`: `eol`, `templateTime`, `numberFileLogBackup`, `willColorfulLevel`, `willOutputConsoleError`
-* refactor!: Export Symbol `symbolLogUpdate` and `symbolLogDone` as a ESModule export now
-	* Remove class `Hades` member `symbolLogUpdate` and `symbolLogDone` 
-* docs: Better types
-* refactor: Renew all codes
-* build: Bump up dependencies
+* feat: new `Hades` method `where` and `what` for preset `where` and `what` in same code scope
+	* preset feature corresponds to new classes `Melinoe` and `Zagreus`
+* feat: new `HadesOption`: `eol`, `templateTime`, `numberFileLogBackup`, `willColorfulLevel`, `willOutputConsoleError`
+* refactor!: export Symbol `symbolLogUpdate` and `symbolLogDone` as a ESModule export now
+	* remove class `Hades` member `symbolLogUpdate` and `symbolLogDone` 
+* docs: better types
+* refactor: renew all codes
+* deps: bump up dependencies
 
 
 
 ## v6.3.1 - 2024.07.16 16
-* revert: Revert second delimiter in log format to `double space`
+* revert: revert second delimiter in log format to `double space`
 
 
 ## v6.3.0 - 2024.07.16 11
-* feat: Hades now handles replacer when not highlighted.  
+* feat: hades now handles replacer when not highlighted.  
 	* This allows the same text to be used in both highlighted and no-highlighted
-* feat: New `i18next` formatter: `typeof`
-* refactor: Now `Hades` will add `i18next` formatters, no longer handled by `@nuogz/i18n`
+* feat: new `i18next` formatter: `typeof`
+* refactor: now `Hades` will add `i18next` formatters, no longer handled by `@nuogz/i18n`
 
 
 ## v6.2.0 - 2024.07.13 16
-* refactor!: Update some swtich options prefiex to `will` form `is`
-* refactor: Change delimiter in log format
-* build: Bump up dependencies
-* chore: Improve develop environments
+* refactor!: update some swtich options prefiex to `will` form `is`
+* refactor: change delimiter in log format
+* deps: bump up dependencies
+* chore: improve develop environments
 
 
 ## v6.1.0 - 2023.12.07 13
