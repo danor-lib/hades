@@ -2,6 +2,7 @@
 	"name": "Logger",
 	"init": "init",
 	"path": "path",
+	"default-error": "✖ Error occured",
 	"level": {
 		"ALL": "ALL",
 		"TRACE": "TRACE",

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v7.1.0 - 2024.08.27 09
+* refactor: improve log format when show error
+* docs: update locale
+* deps: bump up dependencies
+* chore: improve develop environments
+
+
 ## v7.0.2 - 2024.07.23 19
 * refactor: use new translator function to output initialization log
 * deps: bump up dependencies

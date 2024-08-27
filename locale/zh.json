@@ -2,6 +2,7 @@
 	"name": "日志",
 	"init": "加载",
 	"path": "路径",
+	"default-error": "✖ 发生错误",
 	"level": {
 		"ALL": "全部",
 		"TRACE": "跟踪",
