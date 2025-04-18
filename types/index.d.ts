@@ -397,6 +397,11 @@ export class Melinoe {
      */
     where: string;
     /**
+     * @param {string} what
+     * @returns {Zagreus}
+     */
+    what(what: string): Zagreus;
+    /**
      * trace
      * - used to record `low-level` data with `high` frequency
      * - such as `i` in loop

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v7.2.0 - 2025.04.18 10
+* feat: new method on `Melinoe.what(what)`, which will return a new `Zagreus`
+* docs: update docs
+* chore: bump up dependencies
+* chore: improve environment files
+
+
 ## v7.1.0 - 2024.08.27 09
 * refactor: improve log format when show error
 * docs: update locale
