@@ -1,24 +1,59 @@
-import { normalize } from 'path';
-import { EOL } from 'os';
+import { normalize } from 'node:path';
+import { EOL } from 'node:os';
 
-import streams from 'streamroller';
+import Log4JS from 'log4js';
+import LoggingEvent from 'log4js/lib/LoggingEvent.js';
+import StreamRoller from 'streamroller';
+
+import formatLog from './formatLog.js';
+
+/** @import { AppenderFunction, AppenderModule } from 'log4js' */
+/** @import { FileAppenderConfig } from '../types.ts' */
+/** @import { Hades } from './Hades.js' */
 
 
 
 const console = globalThis.console;
 const consoleError = console.error.bind(console);
 
-const openRollingFileStream = (path, sizeFileLog, numberFileLogBackup, option) => {
-	return new streams.RollingFileStream(path, sizeFileLog, numberFileLogBackup, option)
-		.on('error', error => consoleError('log4js.fileAppender - Writing to file %s, error happened ', path, error))
+
+/**
+ * Open a rolling file stream with error handling and drain events
+ * @param {string} path
+ * @param {number} sizeFileLog
+ * @param {number} numberFileLogBackup
+ * @param {any} options
+ * @param {Hades} hades
+ */
+const openRollingFileStream = (path, sizeFileLog, numberFileLogBackup, options, hades) => {
+	return new StreamRoller.RollingFileStream(path, sizeFileLog, numberFileLogBackup, options)
+		.on('error', error => consoleError(formatLog(
+			new LoggingEvent(
+				hades.name, Log4JS.levels.ERROR,
+				[hades.texts['name'], 'FileAppender', `✘ ${hades.texts['error-encounter']}`, path, error],
+				hades.logger?.context ?? {}, undefined,
+				error,
+			),
+			hades.willHighlight, hades.willColorLevel, hades.templateTime, hades.texts)[0]),
+		)
 		.on('drain', () => process.emit('log4js:pause', false));
 };
 
 
+/** Symbol to mark a log as an inline update */
+export const symbolLogUpdate = Symbol('log-update');
+/** Symbol to mark a log as the end of an inline update */
+export const symbolLogDone = Symbol('log-done');
 
-/** @type {import('log4js').AppenderModule} */
-const moduleAppenderFile = {
-	/** @param {import('../bases.js').FileAppenderConfig} config */
+
+
+/**
+ * Custom log4js file appender module
+ * Writes formatted logs to rolling files with SIGHUP handling
+ * @type {AppenderModule}
+ */
+export const moduleAppenderFile = {
+	/** @param {FileAppenderConfig} config */
 	configure: config => {
 		const { hades, handle } = config;
 
@@ -27,9 +62,9 @@ const moduleAppenderFile = {
 
 
 
-		let stream = openRollingFileStream(path, sizeFileLogMax, numberFileLogBackup, config);
+		let stream = openRollingFileStream(path, sizeFileLogMax, numberFileLogBackup, config.optionsStreamRoller, hades);
 
-		/** @type {import('log4js').AppenderFunction} */
+		/** @type {AppenderFunction} */
 		const appender = event => {
 			const log = handle(event, config);
 
@@ -54,7 +89,3 @@ const moduleAppenderFile = {
 		return appender;
 	}
 };
-
-
-
-export default moduleAppenderFile;

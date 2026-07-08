@@ -2,10 +2,11 @@ import Chalk from 'chalk';
 import Day from 'dayjs';
 
 import DayCustomParseFormatPlugin from 'dayjs/plugin/customParseFormat.js';
-
-
-
 Day.extend(DayCustomParseFormatPlugin);
+
+/** @import { LoggingEvent } from 'log4js' */
+/** @import { Hades } from '../index.js' */
+
 
 
 /**
@@ -17,30 +18,35 @@ export const highlight = (string, willHighlight = true) =>
 	String(string)
 		.replace(/(?<!\\)~(?<!\\)\[(.*?)(?<!\\)\]/g, willHighlight ? Chalk.underline.bold('$1') : '$1')
 		.replace(/(?<!\\)~(?<!\\)\{(.*?)(?<!\\)\}/g, willHighlight ? Chalk.white('[$1]') : '[$1]')
-		.replace(/\\([~{}[\]])/g, '$1')
-	;
+		.replace(/\\([~{}[\]])/g, '$1');
 
 
+
+/**
+ * Check if a value is an Error-like object
+ * @param {any} object
+ * @returns {boolean}
+ */
 const likeError = object => object instanceof Error || (object?.stack && object?.message);
 
 
 
 /**
- *
- * @param {import('log4js').LoggingEvent} event
+ * Format a logging event into styled log strings
+ * @param {LoggingEvent} event
  * @param {boolean} willHighlight
- * @param {boolean} willColorfulLevel
+ * @param {boolean} willColorLevel
  * @param {string} templateTime
- * @param {import('@nuogz/i18n').NamespacelizedLocalizedTranslator} T
- * @returns
+ * @param {Hades['texts']} textsHades
+ * @returns {[string] | [string, string]} The formatted log string, and optionally the error stack string
  */
-const formatLog = (event, willHighlight = true, willColorfulLevel = true, templateTime = 'MM-DD HH:mm:ss:SSS', T) => {
+export const formatLog = (event, willHighlight = true, willColorLevel = true, templateTime = 'MM-DD HH:mm:ss:SSS', textsHades) => {
 	const { startTime, level: { colour, levelStr }, data: datas } = event;
 	if(!datas.length) { return ['']; }
 
 
 	const color = colour;
-	const level = T(`level.${levelStr}`);
+	const level = textsHades.level[levelStr];
 	const time = Day(startTime).format(templateTime);
 
 
@@ -75,7 +81,7 @@ const formatLog = (event, willHighlight = true, willColorfulLevel = true, templa
 		}
 	}
 
-	if(likeError(datas[2])) { texts[0] = `--> ${texts[0]}`; texts.unshift(T('default-error')); }
+	if(likeError(datas[2])) { texts[0] = `--> ${texts[0]}`; texts.unshift(`✘ ${textsHades['error-encounter']}`); }
 
 
 	let where = datas[0];
@@ -92,7 +98,7 @@ const formatLog = (event, willHighlight = true, willColorfulLevel = true, templa
 		(action ? ` => ${action}` : '') +
 		(resultAll ? `  ${resultAll}` : '')
 		;
-	if(willHighlight && willColorfulLevel) { logFinal = Chalk[color](logFinal); }
+	if(willHighlight && willColorLevel) { logFinal = Chalk[color](logFinal); }
 
 
 	const logError = [
@@ -111,7 +117,3 @@ const formatLog = (event, willHighlight = true, willColorfulLevel = true, templa
 
 	return errors.length ? [logFinal, logError] : [logFinal];
 };
-
-
-
-export default formatLog;

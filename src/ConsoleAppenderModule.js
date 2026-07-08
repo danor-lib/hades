@@ -1,6 +1,9 @@
 import logUpdate from 'log-update';
 
-import { symbolLogDone, symbolLogUpdate } from './symbol.js';
+import { symbolLogDone, symbolLogUpdate } from './Hades.js';
+
+/** @import { AppenderModule } from 'log4js' */
+/** @import { ConsoleAppenderConfig } from '../types.ts' */
 
 
 
@@ -9,9 +12,13 @@ const consoleLog = console.log.bind(console);
 const consoleError = console.error.bind(console);
 
 
-/** @type {import('log4js').AppenderModule} */
-const moduleAppenderConsole = {
-	/** @param {import('../bases.js').ConsoleAppenderConfig} config */
+/**
+ * Custom log4js console appender module
+ * Outputs styled logs to the console with inline update support
+ * @type {AppenderModule}
+ */
+export const moduleAppenderConsole = {
+	/** @param {ConsoleAppenderConfig} config */
 	configure: config => {
 		return event => {
 			const { handle } = config;
@@ -43,7 +50,3 @@ const moduleAppenderConsole = {
 		};
 	}
 };
-
-
-
-export default moduleAppenderConsole;

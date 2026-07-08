@@ -1,51 +1,29 @@
-import { dirname, resolve as resolvePath } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve as resolvePath } from 'node:path';
 
 import Log4JS from 'log4js';
 
-import formatLog from './lib/formatLog.js';
-import { symbolLogUpdate, symbolLogDone } from './lib/symbol.js';
+import { RichError } from '@danor-lib/error';
 
-import moduleAppenderFile from './lib/FileAppenderModule.js';
-import moduleAppenderConsole from './lib/ConsoleAppenderModule.js';
+import { formatLog } from './formatLog.js';
 
-import { copyJSON } from '@nuogz/utility';
-import { loadI18NResource, TT } from '@nuogz/i18n';
+import { moduleAppenderFile, symbolLogDone, symbolLogUpdate } from './FileAppenderModule.js';
+import { moduleAppenderConsole } from './ConsoleAppenderModule.js';
 
+/** @import { HadesOption, ConsoleAppenderConfig, FileAppenderConfig } from '../types.ts' */
 
-
-loadI18NResource('@nuogz/hades', resolvePath(dirname(fileURLToPath(import.meta.url)), 'locale'));
-
-const { T, TS } = TT('@nuogz/hades');
-
-
-
-const globalTop = globalThis ?? global;
-const NI18N = globalTop.NI18N;
-
-
-const escapeFromHades = value => value?.toString?.()?.replace?.(/([~{}[\]])/g, '\\$1') ?? value;
-const escapeFromI18Next = NI18N.translator.interpolator.escape;
-
-
-NI18N.services.formatter.add('typeof', value => typeof value);
-
-NI18N.services.formatter.add('term', value => `~[${escapeFromHades(value)}]`);
-NI18N.services.formatter.add('value', value => `~{${escapeFromHades(value)}}`);
-
-NI18N.services.formatter.add('valueType', value => `~{${escapeFromI18Next(escapeFromHades(value))} <${typeof value}>}`);
-NI18N.services.formatter.add('valueTypeUnescape', value => `~{${escapeFromHades(value)} <${typeof value}>}`);
-NI18N.services.formatter.add('valueJSON', value => `~{${escapeFromI18Next(escapeFromHades(JSON.stringify(value)))}`);
-NI18N.services.formatter.add('valueJSONUnescape', value => `~{${escapeFromHades(JSON.stringify(value))}`);
-
-NI18N.services.formatter.add('valueTypeof', value => `~{${typeof value}}`);
-
-
-/** @typedef {import('./bases.d.ts').HadesOption} HadesOption */
 
 
 /**
- * Log4JS Total Configuration
+ * Check if a value is a non-null object
+ * @param {any} value
+ * @returns {boolean}
+ */
+const isObject = (value) => value != null && typeof value == 'object';
+
+
+
+/**
+ * Log4JS global configuration
  * @type {Log4JS.Configuration}
  */
 export const configureStatic = {
@@ -59,160 +37,94 @@ export const configureStatic = {
 };
 
 
-export { symbolLogUpdate, symbolLogDone };
 
-
-const parseEnvironments = () => {
-	/** @type {Object<string,string>} */
-	const environments = {};
-
-
-	try {
-		const entries = [...new globalTop.URL(`https://world.peace?${process.env?.NENV_HADES ?? ''}`).searchParams.entries()];
-
-
-		for(const [key, value] of entries) { environments[key.toLowerCase()] = value; }
-	}
-	catch { void 0; }
-
-
-	return environments;
-};
-const parseEnvironmentFlag = string =>
-	string == 'true' ? true
-		: string == 'false' ? false :
-			string === '' ? undefined : string;
-
-
-
-/**
- * @param {Error|string} message
- * @param {any} [cause]
- * @returns {Error}
- */
-export const ErrorCause = (message, cause) => {
-	const error = message instanceof Error ? message : Error(message, { cause });
-
-	if(cause !== undefined && !('cause' in error)) { error.cause = cause; }
-
-	return error;
-};
-
-
-/**
- * @param {Error|string} message
- * @param {any} [data]
- * @returns {Error}
- */
-export const ErrorData = (message, data) => {
-	const error = message instanceof Error ? message : Error(message);
-
-	if(data !== undefined) { error.data = data; }
-
-	return error;
-};
-
-
-
-/**
- * - Log system in the format of `where, what, and result`
- * - The error stack will not output by default，saved in file `*.stack.log` instead
- * - 7 log level：
- *   - trace
- *   - debug
- *   - info
- *   - warn
- *   - error
- *   - fatal
- *   - mark
- * @class
- */
-export default class Hades {
+export class Hades {
 	/**
-	 * Specifies the name of the Hades instance, which is also the log file name by default
-	 * @default 'default'
+	 * Specify the name of the Hades instance, which is also the log file name by default
 	 * @type {string}
 	 */
-	name;
+	name = 'default';
 	/**
-	 * Specify the minimum log level at which Hades will handle
-	 * @default 'all'
+	 * Specify the minimum log level that Hades will handle
 	 * @type {string}
 	 * @see {@link https://log4js-node.github.io/log4js-node/api}
 	 */
-	level;
+	level = 'all';
 	/**
 	 * Specify the directory in which logs are stored
-	 * - If do not specify a directory, logs will not be saved to a file
+	 * - If no directory is specified, logs will not be saved to a file
 	 * @type {string}
 	 */
-	dirLog;
+	dirnLog = process.cwd();
 
 
 	/**
 	 * Specify the end-of-line marker of log files
 	 * @type {string}
 	 */
-	eol;
+	eolFile;
 	/**
 	 * Specify the time template of logs
-	 * @default 'MM-DD HH:mm:ss:SSS'
 	 * @type {string}
 	 * @see {@link https://day.js.org/docs/en/display/format}
 	 */
-	templateTime;
+	templateTime = 'MM-DD HH:mm:ss:SSS';
 	/**
 	 * Specify the maximum size of a log file
-	 * @default 20971520 // 20MB
 	 * @type {number}
 	 */
-	sizeFileLogMax;
+	sizeFileLogMax = 1024 * 1024 * 20; // 20MB
 
 	/**
 	 * Specify the number of old log files to keep
-	 * @default 0
 	 * @type {number}
 	 * @see {@link https://github.com/log4js-node/streamroller}
 	 */
-	numberFileLogBackup;
+	numberFileLogBackup = 0;
 
 
 	/**
-	 * Specifies whether Hades will output styling highlighted logs
-	 * @default true
-	 * @type {boolean}
+	 * Texts for i18n
 	 */
-	willHighlight;
+	texts = {
+		'name': '日志',
+		'init': '加载',
+		'error-encounter': '发生错误',
+		'level': {
+			'ALL': '全部',
+			'TRACE': '跟踪',
+			'DEBUG': '调试',
+			'INFO': '信息',
+			'WARN': '警告',
+			'ERROR': '错误',
+			'FATAL': '致命',
+			'MARK': '标记',
+			'OFF': '关闭'
+		}
+	};
+
+
 	/**
-	 * Specifies whether Hades will output colorful logs based on log level
-	 * @default true
+	 * Specify whether Hades outputs styled and highlighted logs
 	 * @type {boolean}
 	 */
-	willColorfulLevel;
+	willHighlight = true;
 	/**
-	 * Specifies whether Hades will output initialized information after initialization
-	 * @default true
+	 * Specify whether Hades outputs color-coded logs based on log level
 	 * @type {boolean}
 	 */
-	willOutputInitInfo;
+	willColorLevel = true;
 	/**
-	 * Specifies whether Hades will output the directory where logs are located after initialization
-	 * @default false
+	 * Specify whether Hades outputs initialization information after setup
 	 * @type {boolean}
 	 */
-	willOutputLogDir;
+	willOutputInitInfo = true;
 	/**
-	 * Specifies whether Hades will output error logs in console stream
-	 * @default false
+	 * Specify whether Hades outputs error logs in the console stream
 	 * @type {boolean}
 	 */
-	willOutputConsoleError;
-	/**
-	 * Specifies whether Hades will be initialized immediately after construct
-	 * @default true
-	 * @type {boolean}
-	 */
-	willInitImmediate;
+	willConsoleOutputError = false;
+
 
 
 	/**
@@ -222,73 +134,255 @@ export default class Hades {
 	logger;
 
 
+
 	/**
 	 * Indicates whether Hades has initialized the logger
 	 * @type {boolean}
 	 */
-	inited = false;
+	isInit = false;
 
 
-	/** @param {HadesOption} [option] */
-	constructor(option) {
-		const environments = parseEnvironments();
+
+	/** @param {HadesOption} [options] */
+	constructor(options) {
+		if(options != null) {
+			if(!isObject(options)) {
+				throw new RichError({
+					code: 'invalid-options', at: 'hades/Hades#constructor(options)',
+					data: { options },
+				});
+			}
+		}
+		else { options = {}; }
 
 
-		this.name = option?.name ?? environments.name ?? 'default';
-		this.level = option?.level ?? environments.level ?? 'all';
-		this.dirLog = option?.dirLog ?? environments.dirlog;
 
-		this.eol = option?.eol ?? environments.eol;
-		this.templateTime = option?.templateTime ?? environments.templatetime ?? 'MM-DD HH:mm:ss:SSS';
-		this.sizeFileLogMax = option?.sizeFileLogMax ?? environments.sizefilelogmax ?? 1024 * 1024 * 20;
-		this.numberFileLogBackup = option?.numberFileLogBackup ?? environments.numberfilelogbackup ?? 0;
-
-		this.willHighlight = option?.willHighlight ?? parseEnvironmentFlag(environments.willhighlight) ?? true;
-		this.willColorfulLevel = option?.willColorfulLevel ?? parseEnvironmentFlag(environments.willColorfulLevel) ?? true;
-		this.willOutputInitInfo = option?.willOutputInitInfo ?? parseEnvironmentFlag(environments.willoutputinitinfo) ?? true;
-		this.willOutputLogDir = option?.willOutputLogDir ?? parseEnvironmentFlag(environments.willoutputlogdir) ?? false;
-		this.willOutputConsoleError = option?.willOutputConsoleError ?? parseEnvironmentFlag(environments.willoutputconsoleerror) ?? false;
-		this.willInitImmediate = option?.willInitImmediate ?? parseEnvironmentFlag(environments.willinitimmediate) ?? true;
+		const name = options.name;
+		if(name != null) {
+			if(typeof name != 'string') {
+				throw new RichError({
+					code: 'invalid-name', at: 'hades/Hades#constructor(options.name)',
+					data: { name },
+				});
+			}
 
 
-		if(this.willInitImmediate) { this.init(); }
+			this.name = name.trim();
+		}
+
+		const level = options.level;
+		if(level != null) {
+			if(typeof level != 'string') {
+				throw new RichError({
+					code: 'invalid-level', at: 'hades/Hades#constructor(options.level)',
+					data: { level },
+				});
+			}
+
+
+			this.level = level.trim();
+		}
+
+		const dirnLog = options.dirn;
+		if(dirnLog != null) {
+			if(typeof dirnLog != 'string') {
+				throw new RichError({
+					code: 'invalid-log-dirn', at: 'hades/Hades#constructor(options.dirn)',
+					data: { dirn: dirnLog },
+				});
+			}
+
+
+			this.dirnLog = dirnLog.trim();
+		}
+
+
+		const texts = options.texts;
+		if(texts != null) {
+			if(!isObject(texts)) {
+				throw new RichError({
+					code: 'invalid-texts', at: 'hades/Hades#constructor(options.texts)',
+					data: { texts },
+				});
+			}
+
+
+			this.texts.name = texts.name != null ? texts.name.trim() : this.texts.name;
+			this.texts.init = texts.init != null ? texts.init.trim() : this.texts.init;
+			this.texts.errorEncouter = texts.errorEncouter != null ? texts.errorEncouter.trim() : this.texts.errorEncouter;
+
+			this.texts.level.ALL = texts.level?.ALL != null ? texts.level.ALL.trim() : this.texts.level.ALL;
+			this.texts.level.TRACE = texts.level?.TRACE != null ? texts.level.TRACE.trim() : this.texts.level.TRACE;
+			this.texts.level.DEBUG = texts.level?.DEBUG != null ? texts.level.DEBUG.trim() : this.texts.level.DEBUG;
+			this.texts.level.INFO = texts.level?.INFO != null ? texts.level.INFO.trim() : this.texts.level.INFO;
+			this.texts.level.WARN = texts.level?.WARN != null ? texts.level.WARN.trim() : this.texts.level.WARN;
+			this.texts.level.ERROR = texts.level?.ERROR != null ? texts.level.ERROR.trim() : this.texts.level.ERROR;
+			this.texts.level.FATAL = texts.level?.FATAL != null ? texts.level.FATAL.trim() : this.texts.level.FATAL;
+			this.texts.level.MARK = texts.level?.MARK != null ? texts.level.MARK.trim() : this.texts.level.MARK;
+			this.texts.level.OFF = texts.level?.OFF != null ? texts.level.OFF.trim() : this.texts.level.OFF;
+		}
+
+
+
+		const eolFile = options.eol;
+		if(eolFile != null) {
+			if(typeof eolFile != 'string') {
+				throw new RichError({
+					code: 'invalid-eol', at: 'hades/Hades#constructor(options.eol)',
+					data: { eol: eolFile },
+				});
+			}
+
+
+			this.eolFile = eolFile;
+		}
+
+		const templateTime = options.templateTime;
+		if(templateTime != null) {
+			if(typeof templateTime != 'string') {
+				throw new RichError({
+					code: 'invalid-time-template', at: 'hades/Hades#constructor(options.templateTime)',
+					data: { templateTime },
+				});
+			}
+
+
+			this.templateTime = templateTime.trim();
+		}
+
+		const sizeFileLogMax = options.sizeFileLogMax;
+		if(sizeFileLogMax != null) {
+			if(typeof sizeFileLogMax != 'number' || !Number.isInteger(sizeFileLogMax) || sizeFileLogMax <= 0) {
+				throw new RichError({
+					code: 'invalid-max-file-log-size', at: 'hades/Hades#constructor(options.sizeFileLogMax)',
+					data: { sizeFileLogMax },
+				});
+			}
+
+
+			this.sizeFileLogMax = sizeFileLogMax;
+		}
+
+		const numberFileLogBackupMax = options.numberFileLogBackupMax;
+		if(numberFileLogBackupMax != null) {
+			if(typeof numberFileLogBackupMax != 'number' || Number.isInteger(numberFileLogBackupMax) || numberFileLogBackupMax < 0) {
+				throw new RichError({
+					code: 'invalid-max-backup-log-file', at: 'hades/Hades#constructor(options.numberFileLogBackup)',
+					data: { numberFileLogBackup: numberFileLogBackupMax },
+				});
+			}
+
+
+			this.numberFileLogBackup = numberFileLogBackupMax;
+		}
+
+
+
+		const willHighlight = options.willHighlight;
+		if(willHighlight != null) {
+			if(typeof willHighlight != 'boolean') {
+				throw new RichError({
+					code: 'invalid-will-highlight', at: 'hades/Hades#constructor(options.willHighlight)',
+					data: { willHighlight },
+				});
+			}
+
+
+			this.willHighlight = willHighlight;
+		}
+
+		const willColorLevel = options.willColorLevel;
+		if(willColorLevel != null) {
+			if(typeof willColorLevel != 'boolean') {
+				throw new RichError({
+					code: 'invalid-will-level-colorful', at: 'hades/Hades#constructor(options.willColorLevel)',
+					data: { willColorLevel },
+				});
+			}
+
+
+			this.willColorLevel = willColorLevel;
+		}
+
+		const willOutputInitInfo = options.willOutputInitInfo;
+		if(willOutputInitInfo != null) {
+			if(typeof willOutputInitInfo != 'boolean') {
+				throw new RichError({
+					code: 'invalid-will-output-init-info', at: 'hades/Hades#constructor(options.willOutputInitInfo)',
+					data: { willOutputInitInfo },
+				});
+			}
+
+
+			this.willOutputInitInfo = willOutputInitInfo;
+		}
+
+		const willConsoleOutputError = options.willConsoleOutputError;
+		if(willConsoleOutputError != null) {
+			if(typeof willConsoleOutputError != 'boolean') {
+				throw new RichError({
+					code: 'invalid-will-output-console-error', at: 'hades/Hades#constructor(options.willConsoleOutputError)',
+					data: { willConsoleOutputError },
+				});
+			}
+
+
+			this.willConsoleOutputError = willConsoleOutputError;
+		}
+
+
+		let willInitImmediate = options.willInitImmediate;
+		if(willInitImmediate != null) {
+			if(typeof willInitImmediate != 'boolean') {
+				throw new RichError({
+					code: 'invalid-will-init-immediate', at: 'hades/Hades#constructor(options.willInitImmediate)',
+					data: { willInitImmediate },
+				});
+			}
+		}
+		else { willInitImmediate = true; }
+
+
+
+		if(willInitImmediate) { this.init(); }
 	}
 
 
-	/** init Hades */
+	/**
+	 * Initialize Hades
+	 * @returns {Hades}
+	 */
 	init() {
-		const { name, level, dirLog, willOutputInitInfo, willOutputLogDir } = this;
+		const { name, level, dirnLog, texts, willOutputInitInfo } = this;
 
 
 		/** @type {Log4JS.Configuration} */
-		const configure = copyJSON(configureStatic);
+		const configure = JSON.parse(JSON.stringify(configureStatic));
 		/** @type {Log4JS.Appender[]} */
 		const appenders = [];
 
 
 
 		const nameAppenderConsole = `${name}-console`;
-		/** @type {import('./bases.d.ts').ConsoleAppenderConfig} */
+		/** @type {ConsoleAppenderConfig} */
 		const configAppenderConsole = {
 			type: moduleAppenderConsole,
 			hades: this,
-			T,
-			handle: (event, { hades, T: Translator }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, Translator),
+			handle: (event, { hades }) => formatLog(event, hades.willHighlight, hades.willColorLevel, hades.templateTime, hades.texts),
 		};
 		configure.appenders[nameAppenderConsole] = configAppenderConsole;
 		appenders.push(nameAppenderConsole);
 
 
-		if(dirLog) {
+		if(dirnLog) {
 			const nameAppenderFile = `${name}-file`;
 
-			/** @type {import('./bases.d.ts').FileAppenderConfig} */
+			/** @type {FileAppenderConfig} */
 			const configAppenderFile = {
 				type: moduleAppenderFile,
 				hades: this,
-				T,
-				handle: (event, { hades, T: Translator }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, Translator)[0],
-				path: resolvePath(dirLog, `${name}.log`)
+				handle: (event, { hades }) => formatLog(event, hades.willHighlight, hades.willColorLevel, hades.templateTime, hades.texts)[0],
+				path: resolvePath(dirnLog, `${name}.log`)
 			};
 			configure.appenders[nameAppenderFile] = configAppenderFile;
 			appenders.push(nameAppenderFile);
@@ -296,13 +390,12 @@ export default class Hades {
 
 			const nameAppenderFileStack = `${name}-file-stack`;
 
-			/** @type {import('./bases.d.ts').FileAppenderConfig} */
+			/** @type {FileAppenderConfig} */
 			const configAppenderFileStack = {
 				type: moduleAppenderFile,
 				hades: this,
-				T,
-				handle: (event, { hades, T: TScoped }) => formatLog(event, hades.willHighlight, hades.willColorfulLevel, hades.templateTime, TScoped)[1],
-				path: resolvePath(dirLog, `${name}.stack.log`)
+				handle: (event, { hades }) => formatLog(event, hades.willHighlight, hades.willColorLevel, hades.templateTime, hades.texts)[1],
+				path: resolvePath(dirnLog, `${name}.stack.log`)
 			};
 
 			configure.appenders[nameAppenderFileStack] = configAppenderFileStack;
@@ -310,8 +403,8 @@ export default class Hades {
 		}
 
 
-
 		configure.categories[name] = { appenders, level };
+
 
 
 		this.logger = Log4JS.configure(configure).getLogger(name);
@@ -320,12 +413,7 @@ export default class Hades {
 
 
 		if(willOutputInitInfo) {
-			if(dirLog && willOutputLogDir) {
-				this.info(...TS('', 'name', 'init', '✔', `${T('path')}~{${dirLog}}`));
-			}
-			else {
-				this.info(...TS('', 'name', 'init', '✔'));
-			}
+			this.info(texts['name'], texts['init'], '✔');
 		}
 
 
@@ -333,13 +421,15 @@ export default class Hades {
 	}
 
 	/**
-	 * reload logger asynchronously
+	 * Reload the logger asynchronously
 	 * @returns {Promise<Hades>}
 	 */
-	reload() {
-		return new Promise((resolver, rejecter) =>
-			Log4JS.shutdown(error => error ? resolver(this.init()) : rejecter(error))
+	async reload() {
+		await new Promise((resolver, rejecter) =>
+			Log4JS.shutdown(error => error ? resolver() : rejecter(error))
 		);
+
+		return this.init();
 	}
 
 
@@ -347,10 +437,10 @@ export default class Hades {
 	/**
 	 * trace
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -359,8 +449,8 @@ export default class Hades {
 	/**
 	 * debug
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -368,8 +458,8 @@ export default class Hades {
 	debug(where, what, ...infos) { this.logger.debug(...arguments); }
 	/**
 	 * info
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -377,10 +467,10 @@ export default class Hades {
 	info(where, what, ...infos) { this.logger.info(...arguments); }
 	/**
 	 * warn
-	 * - used to record operation datas that may cause exceptions
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -388,10 +478,10 @@ export default class Hades {
 	warn(where, what, ...infos) { this.logger.warn(...arguments); }
 	/**
 	 * error
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -400,8 +490,8 @@ export default class Hades {
 	/**
 	 * fatal
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -409,10 +499,10 @@ export default class Hades {
 	fatal(where, what, ...infos) { this.logger.fatal(...arguments); }
 	/**
 	 * mark
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -424,10 +514,10 @@ export default class Hades {
 	 * traceU
 	 * - mark as inline update
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -437,8 +527,8 @@ export default class Hades {
 	 * debugU
 	 * - mark as inline update
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -447,8 +537,8 @@ export default class Hades {
 	/**
 	 * infoU
 	 * - mark as inline update
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -457,10 +547,10 @@ export default class Hades {
 	/**
 	 * warnU
 	 * - mark as inline update
-	 * - used to record operation datas that may cause exceptions
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -469,10 +559,10 @@ export default class Hades {
 	/**
 	 * errorU
 	 * - mark as inline update
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -482,8 +572,8 @@ export default class Hades {
 	 * fatalU
 	 * - mark as inline update
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -492,10 +582,10 @@ export default class Hades {
 	/**
 	 * markU
 	 * - mark as inline update
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -505,12 +595,12 @@ export default class Hades {
 
 	/**
 	 * traceD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -518,10 +608,10 @@ export default class Hades {
 	traceD(where, what, ...infos) { this.logger.trace(symbolLogDone, ...arguments); }
 	/**
 	 * debugD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -529,9 +619,9 @@ export default class Hades {
 	debugD(where, what, ...infos) { this.logger.debug(symbolLogDone, ...arguments); }
 	/**
 	 * infoD
-	 * - mark as inline update ended
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - mark as end of inline update
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -539,11 +629,11 @@ export default class Hades {
 	infoD(where, what, ...infos) { this.logger.info(symbolLogDone, ...arguments); }
 	/**
 	 * warnD
-	 * - mark as inline update ended
-	 * - used to record operation datas that may cause exceptions
+	 * - mark as end of inline update
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -551,11 +641,11 @@ export default class Hades {
 	warnD(where, what, ...infos) { this.logger.warn(symbolLogDone, ...arguments); }
 	/**
 	 * errorD
-	 * - mark as inline update ended
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - mark as end of inline update
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -563,10 +653,10 @@ export default class Hades {
 	errorD(where, what, ...infos) { this.logger.error(symbolLogDone, ...arguments); }
 	/**
 	 * fatalD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -574,11 +664,11 @@ export default class Hades {
 	fatalD(where, what, ...infos) { this.logger.fatal(symbolLogDone, ...arguments); }
 	/**
 	 * markD
-	 * - mark as inline update ended
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - mark as end of inline update
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {string} where
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -586,11 +676,11 @@ export default class Hades {
 	markD(where, what, ...infos) { this.logger.mark(symbolLogDone, ...arguments); }
 
 	/**
-	 * fatalU
-	 * - exit with detect exit code
+	 * fatalE
+	 * - exit with the specified exit code
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {number} code exit code
 	 * @param {string} where
 	 * @param {string} what
@@ -622,15 +712,15 @@ export default class Hades {
 
 
 
-/** typed `Hades` with `where` preseted */
+/** Typed `Hades` with preset `where` */
 export class Melinoe {
 	/**
-	 * the Hades instance
+	 * The Hades instance
 	 * @type {Hades}
 	 */
 	hades;
 	/**
-	 * Specifies preset where
+	 * Specify the preset where
 	 * @type {string}
 	 */
 	where;
@@ -656,10 +746,10 @@ export class Melinoe {
 	/**
 	 * trace
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -667,36 +757,36 @@ export class Melinoe {
 	/**
 	 * debug
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	debug(what, ...infos) { this.hades.debug(this.where, ...arguments); }
 	/**
 	 * info
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	info(what, ...infos) { this.hades.info(this.where, ...arguments); }
 	/**
 	 * warn
-	 * - used to record operation datas that may cause exceptions
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	warn(what, ...infos) { this.hades.warn(this.where, ...arguments); }
 	/**
 	 * error
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -704,18 +794,18 @@ export class Melinoe {
 	/**
 	 * fatal
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	fatal(what, ...infos) { this.hades.fatal(this.where, ...arguments); }
 	/**
 	 * mark
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -726,10 +816,10 @@ export class Melinoe {
 	 * traceU
 	 * - mark as inline update
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -738,8 +828,8 @@ export class Melinoe {
 	 * debugU
 	 * - mark as inline update
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -747,8 +837,8 @@ export class Melinoe {
 	/**
 	 * infoU
 	 * - mark as inline update
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -756,10 +846,10 @@ export class Melinoe {
 	/**
 	 * warnU
 	 * - mark as inline update
-	 * - used to record operation datas that may cause exceptions
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -767,10 +857,10 @@ export class Melinoe {
 	/**
 	 * errorU
 	 * - mark as inline update
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -779,8 +869,8 @@ export class Melinoe {
 	 * fatalU
 	 * - mark as inline update
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -788,10 +878,10 @@ export class Melinoe {
 	/**
 	 * markU
 	 * - mark as inline update
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
@@ -800,85 +890,85 @@ export class Melinoe {
 
 	/**
 	 * traceD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	traceD(what, ...infos) { this.hades.trace(symbolLogDone, this.where, ...arguments); }
 	/**
 	 * debugD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	debugD(what, ...infos) { this.hades.debug(symbolLogDone, this.where, ...arguments); }
 	/**
 	 * infoD
-	 * - mark as inline update ended
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - mark as end of inline update
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	infoD(what, ...infos) { this.hades.info(symbolLogDone, this.where, ...arguments); }
 	/**
 	 * warnD
-	 * - mark as inline update ended
-	 * - used to record operation datas that may cause exceptions
+	 * - mark as end of inline update
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	warnD(what, ...infos) { this.hades.warn(symbolLogDone, this.where, ...arguments); }
 	/**
 	 * errorD
-	 * - mark as inline update ended
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - mark as end of inline update
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	errorD(what, ...infos) { this.hades.error(symbolLogDone, this.where, ...arguments); }
 	/**
 	 * fatalD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	fatalD(what, ...infos) { this.hades.fatal(symbolLogDone, this.where, ...arguments); }
 	/**
 	 * markD
-	 * - mark as inline update ended
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - mark as end of inline update
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	markD(what, ...infos) { this.hades.mark(symbolLogDone, this.where, ...arguments); }
 
 	/**
-	 * fatalU
-	 * - exit with detect exit code
+	 * fatalE
+	 * - exit with the specified exit code
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {number} code exit code
 	 * @param {string} what
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
@@ -892,20 +982,20 @@ export class Melinoe {
 
 
 
-/** typed `Hades` with `where` and `what` preseted */
+/** Typed `Hades` with preset `where` and `what` */
 export class Zagreus {
 	/**
-	 * the Hades instance
+	 * The Hades instance
 	 * @type {Hades}
 	 */
 	hades;
 	/**
-	 * Specifies preset where
+	 * Specify the preset where
 	 * @type {string}
 	 */
 	where;
 	/**
-	 * Specifies preset what
+	 * Specify the preset what
 	 * @type {string}
 	 */
 	what;
@@ -926,60 +1016,60 @@ export class Zagreus {
 	/**
 	 * trace
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	trace(...infos) { this.hades.trace(this.where, this.what, ...arguments); }
 	/**
 	 * debug
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	debug(...infos) { this.hades.debug(this.where, this.what, ...arguments); }
 	/**
 	 * info
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	info(...infos) { this.hades.info(this.where, this.what, ...arguments); }
 	/**
 	 * warn
-	 * - used to record operation datas that may cause exceptions
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	warn(...infos) { this.hades.warn(this.where, this.what, ...arguments); }
 	/**
 	 * error
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	error(...infos) { this.hades.error(this.where, this.what, ...arguments); }
 	/**
 	 * fatal
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	fatal(...infos) { this.hades.fatal(this.where, this.what, ...arguments); }
 	/**
 	 * mark
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	mark(...infos) { this.hades.mark(this.where, this.what, ...arguments); }
@@ -989,10 +1079,10 @@ export class Zagreus {
 	 * traceU
 	 * - mark as inline update
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	traceU(...infos) { this.hades.trace(symbolLogUpdate, this.where, this.what, ...arguments); }
@@ -1000,36 +1090,36 @@ export class Zagreus {
 	 * debugU
 	 * - mark as inline update
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	debugU(...infos) { this.hades.debug(symbolLogUpdate, this.where, this.what, ...arguments); }
 	/**
 	 * infoU
 	 * - mark as inline update
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	infoU(...infos) { this.hades.info(symbolLogUpdate, this.where, this.what, ...arguments); }
 	/**
 	 * warnU
 	 * - mark as inline update
-	 * - used to record operation datas that may cause exceptions
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	warnU(...infos) { this.hades.warn(symbolLogUpdate, this.where, this.what, ...arguments); }
 	/**
 	 * errorU
 	 * - mark as inline update
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	errorU(...infos) { this.hades.error(symbolLogUpdate, this.where, this.what, ...arguments); }
@@ -1037,18 +1127,18 @@ export class Zagreus {
 	 * fatalU
 	 * - mark as inline update
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	fatalU(...infos) { this.hades.fatal(symbolLogUpdate, this.where, this.what, ...arguments); }
 	/**
 	 * markU
 	 * - mark as inline update
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	markU(...infos) { this.hades.mark(symbolLogUpdate, this.where, this.what, ...arguments); }
@@ -1056,78 +1146,78 @@ export class Zagreus {
 
 	/**
 	 * traceD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record `low-level` data with `high` frequency
-	 * - such as `i` in loop
-	 * - should not be used in the `production` environment,
-	 *   nor should `submit` any trace code. it is usually deleted immediately after debugging
-	 * - blue color
+	 * - such as `i` in a loop
+	 * - should not be used in production,
+	 *   nor should any trace code be committed; it is usually removed immediately after debugging
+	 * - blue
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	traceD(...infos) { this.hades.trace(symbolLogDone, this.where, this.what, ...arguments); }
 	/**
 	 * debugD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record `calculation results` with `low` frequency
-	 * - such as the result of a function, or not important heartbeat
-	 * - cyan color
+	 * - such as the result of a function or an unimportant heartbeat
+	 * - cyan
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	debugD(...infos) { this.hades.debug(symbolLogDone, this.where, this.what, ...arguments); }
 	/**
 	 * infoD
-	 * - mark as inline update ended
-	 * - used to record regular summaries, or expected exception datas that can be handled
-	 * - green color
+	 * - mark as end of inline update
+	 * - used to record regular summaries or expected exception data that can be handled
+	 * - green
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	infoD(...infos) { this.hades.info(symbolLogDone, this.where, this.what, ...arguments); }
 	/**
 	 * warnD
-	 * - mark as inline update ended
-	 * - used to record operation datas that may cause exceptions
+	 * - mark as end of inline update
+	 * - used to record operational data that may cause exceptions
 	 * - such as the database connection timed out during the startup of the program,
-	 *   but the program can be connected again later
-	 * - yellow color
+	 *   but the program can reconnect later
+	 * - yellow
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	warnD(...infos) { this.hades.warn(symbolLogDone, this.where, this.what, ...arguments); }
 	/**
 	 * errorD
-	 * - mark as inline update ended
-	 * - used to record abnormal logic and unexpected error datas
-	 * - such as when inserting data into the database.
+	 * - mark as end of inline update
+	 * - used to record abnormal logic and unexpected error data
+	 * - such as when inserting data into the database
 	 *   but the necessary fields are empty, resulting in business interruption
-	 * - red color
+	 * - red
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	errorD(...infos) { this.hades.error(symbolLogDone, this.where, this.what, ...arguments); }
 	/**
 	 * fatalD
-	 * - mark as inline update ended
+	 * - mark as end of inline update
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	fatalD(...infos) { this.hades.fatal(symbolLogDone, this.where, this.what, ...arguments); }
 	/**
 	 * markD
-	 * - mark as inline update ended
-	 * - used to record the necessary descriptions of unrelated operation conditions
-	 * - unless the log is turned off, it will be output
-	 * - such as copyright description and precautions
-	 * - grey color
+	 * - mark as end of inline update
+	 * - used to record necessary descriptions of unrelated operational conditions
+	 * - unless the log is turned off, it will always be output
+	 * - such as copyright descriptions and precautions
+	 * - grey
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
 	markD(...infos) { this.hades.mark(symbolLogDone, this.where, this.what, ...arguments); }
 
 	/**
-	 * fatalU
-	 * - exit with detect exit code
+	 * fatalE
+	 * - exit with the specified exit code
 	 * - used to record critical logs that cause the program to exit
-	 * - such as unhandled exception, unexpected file read and write
-	 * - magenta color
+	 * - such as unhandled exceptions or unexpected file read/write errors
+	 * - magenta
 	 * @param {number} code exit code
 	 * @param {any[]} infos the first content will not wrap, and the second content will wrap with indent
 	 */
