@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## poseidon v8.0.0 - 2026.07.08 15
+## v8.0.0 - 2026.07.08 15
 * refactor!: rename package from `@nuogz/hades` to `@danor-lib/hades`
 * docs: **IMPORTANT!** update license to ***MIT***
 * refactor!: rename `HadesOption`.`dirn` from `dir`
