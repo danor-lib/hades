@@ -1,5 +1,6 @@
 import type Log4JS from 'log4js';
-import type { HadesOption } from '../types.js';
+
+import type { HadesOption } from '../types.ts';
 
 
 

@@ -1,6 +1,6 @@
 {
 	"name": "@danor-lib/hades",
-	"version": "8.0.0",
+	"version": "8.0.1",
 	"description": "Log library based on log4js-node",
 	"author": "DanoR",
 	"license": "MIT",
@@ -36,8 +36,8 @@
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
-		"@types/node": "^26.1.0",
-		"eslint": "^10.6.0",
+		"@types/node": "^26.1.1",
+		"eslint": "^10.7.0",
 		"globals": "^17.7.0"
 	}
 }

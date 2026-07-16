@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v8.0.1 - 2026.07.16 10
+* improve: unify the import file extension for `types.ts` to `.ts` when it is imported
+* regular: bump up dependencies
+
+
 ## v8.0.0 - 2026.07.08 15
 * refactor!: rename package from `@nuogz/hades` to `@danor-lib/hades`
 * docs: **IMPORTANT!** update license to ***MIT***
