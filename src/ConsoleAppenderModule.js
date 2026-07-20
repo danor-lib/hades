@@ -1,6 +1,6 @@
 import logUpdate from 'log-update';
 
-import { symbolLogDone, symbolLogUpdate } from './Hades.js';
+import { symbolLogDone, symbolLogUpdate } from './FileAppenderModule.js';
 
 /** @import { AppenderModule } from 'log4js' */
 /** @import { ConsoleAppenderConfig } from '../types.ts' */

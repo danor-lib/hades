@@ -5,7 +5,7 @@ import Log4JS from 'log4js';
 import LoggingEvent from 'log4js/lib/LoggingEvent.js';
 import StreamRoller from 'streamroller';
 
-import formatLog from './formatLog.js';
+import { formatLog } from './formatLog.js';
 
 /** @import { AppenderFunction, AppenderModule } from 'log4js' */
 /** @import { FileAppenderConfig } from '../types.ts' */

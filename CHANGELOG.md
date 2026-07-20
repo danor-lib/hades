@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v8.0.2 - 2026.07.20 10
+* fix: correct the incorrect import
+
+
 ## v8.0.1 - 2026.07.16 10
 * improve: unify the import file extension for `types.ts` to `.ts` when it is imported
 * regular: bump up dependencies
