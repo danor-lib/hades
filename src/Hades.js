@@ -197,7 +197,15 @@ export class Hades {
 		}
 
 
-		const texts = options.texts;
+		let textsEnv;
+		try {
+			textsEnv = process.env.DR_HADES_TEXTS ? JSON.parse(process.env.DR_HADES_TEXTS) : null;
+		}
+		catch {
+			textsEnv = null;
+		}
+
+		const texts = options.texts != null ? options.texts : textsEnv;
 		if(texts != null) {
 			if(!isObject(texts)) {
 				throw new RichError({
@@ -207,19 +215,19 @@ export class Hades {
 			}
 
 
-			this.texts.name = texts.name != null ? texts.name.trim() : this.texts.name;
-			this.texts.init = texts.init != null ? texts.init.trim() : this.texts.init;
-			this.texts.errorEncouter = texts.errorEncouter != null ? texts.errorEncouter.trim() : this.texts.errorEncouter;
+			this.texts.name = typeof texts.name == 'string' ? texts.name.trim() : this.texts.name;
+			this.texts.init = typeof texts.init == 'string' ? texts.init.trim() : this.texts.init;
+			this.texts.errorEncouter = typeof texts.errorEncouter == 'string' ? texts.errorEncouter.trim() : this.texts.errorEncouter;
 
-			this.texts.level.ALL = texts.level?.ALL != null ? texts.level.ALL.trim() : this.texts.level.ALL;
-			this.texts.level.TRACE = texts.level?.TRACE != null ? texts.level.TRACE.trim() : this.texts.level.TRACE;
-			this.texts.level.DEBUG = texts.level?.DEBUG != null ? texts.level.DEBUG.trim() : this.texts.level.DEBUG;
-			this.texts.level.INFO = texts.level?.INFO != null ? texts.level.INFO.trim() : this.texts.level.INFO;
-			this.texts.level.WARN = texts.level?.WARN != null ? texts.level.WARN.trim() : this.texts.level.WARN;
-			this.texts.level.ERROR = texts.level?.ERROR != null ? texts.level.ERROR.trim() : this.texts.level.ERROR;
-			this.texts.level.FATAL = texts.level?.FATAL != null ? texts.level.FATAL.trim() : this.texts.level.FATAL;
-			this.texts.level.MARK = texts.level?.MARK != null ? texts.level.MARK.trim() : this.texts.level.MARK;
-			this.texts.level.OFF = texts.level?.OFF != null ? texts.level.OFF.trim() : this.texts.level.OFF;
+			this.texts.level.ALL = typeof texts.level?.ALL == 'string' ? texts.level.ALL.trim() : this.texts.level.ALL;
+			this.texts.level.TRACE = typeof texts.level?.TRACE == 'string' ? texts.level.TRACE.trim() : this.texts.level.TRACE;
+			this.texts.level.DEBUG = typeof texts.level?.DEBUG == 'string' ? texts.level.DEBUG.trim() : this.texts.level.DEBUG;
+			this.texts.level.INFO = typeof texts.level?.INFO == 'string' ? texts.level.INFO.trim() : this.texts.level.INFO;
+			this.texts.level.WARN = typeof texts.level?.WARN == 'string' ? texts.level.WARN.trim() : this.texts.level.WARN;
+			this.texts.level.ERROR = typeof texts.level?.ERROR == 'string' ? texts.level.ERROR.trim() : this.texts.level.ERROR;
+			this.texts.level.FATAL = typeof texts.level?.FATAL == 'string' ? texts.level.FATAL.trim() : this.texts.level.FATAL;
+			this.texts.level.MARK = typeof texts.level?.MARK == 'string' ? texts.level.MARK.trim() : this.texts.level.MARK;
+			this.texts.level.OFF = typeof texts.level?.OFF == 'string' ? texts.level.OFF.trim() : this.texts.level.OFF;
 		}
 
 

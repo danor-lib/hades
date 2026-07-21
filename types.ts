@@ -4,6 +4,9 @@ import type { Hades } from './src/Hades.js';
 
 
 
+type I18NTexts = { readonly [key: string]: string | I18NTexts; };
+
+
 export type HadesOption = {
 	/**
 	 * Specify the name of the Hades instance, which is also the log file name by default
@@ -83,6 +86,9 @@ export type HadesOption = {
 	 * @type {boolean}
 	 */
 	willInitImmediate?: boolean;
+
+
+	texts?: I18NTexts;
 };
 
 

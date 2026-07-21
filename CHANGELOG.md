@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v8.1.0 - 2026.07.21 10
+* feat: support environment variable `DR_HADES_TEXTS` as fallback value for `HadesOption`.`texts`. this allows initialization at an earlier time, facilitating unified language output throughout logs
+* improve: improve the assignment condition of `HadesOption`.`texts`
+* docs: add `HadesOption`.`texts`
+
+
 ## v8.0.2 - 2026.07.20 10
 * fix: correct the incorrect import
 
