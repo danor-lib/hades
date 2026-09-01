@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v8.2.0 - 2026.09.01 17
+* feat: add the `~<value|value-type>` emphasis syntax, which renders the value in white and the value type in grey inside angle brackets
+  * keep the value type segment when highlighting is disabled, so the same text renders consistently in both modes
+* feat: add helper function `vtof`, `wf`, `wv` and `wvt` for wraping fields and values easily
+* feat: attach helper function `wf`, `wv` and `wvt` to `Hades`, `Melinoe` and `Zagreus`
+* docs: update README to latest
+* regular: bump up dependencies
+  * bump up `@danor-lib/error` to `3.x`
+  * bump up `chalk` to `6.x`
+
+
 ## v8.1.0 - 2026.07.21 10
 * feat: support environment variable `DR_HADES_TEXTS` as fallback value for `HadesOption`.`texts`. this allows initialization at an earlier time, facilitating unified language output throughout logs
 * improve: improve the assignment condition of `HadesOption`.`texts`

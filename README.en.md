@@ -18,7 +18,7 @@ A logging library based on [log4js-node](https://github.com/log4js-node/log4js-n
 Traditional logging libraries usually provide only basic level filtering and output channels. The design goals of `Hades` are:
 
 - **Unified format** — Every log follows a three‑part structure: `where → what → result` (where it happened, what was done, and what the outcome was), making logs both readable and searchable.
-- **Semantic highlighting** — Two control‑character syntaxes, `~[]` (terms/nouns) and `~{}` (values), automatically highlight key information in the terminal.
+- **Semantic highlighting** — Control‑character syntaxes such as `~[field]` (terms/nouns), `~{value}` (values) and `~<value|value-type>` (value + value type) automatically highlight key information in the terminal.
 - **Ready to use** — By default, logs are output to both console and files; file rotation by size is enabled automatically. No extra configuration is needed for a production‑ready logging experience.
 - **Context reuse** — `Melinoe` (preset `where`) and `Zagreus` (preset `where` + `what`) reduce repetitive parameter passing within the same context.
 
@@ -79,24 +79,79 @@ Hades provides 7 log levels, each with a clear use case and corresponding termin
 | `fatal` | `.fatal` | Magenta | Critical logs that cause the program to exit, e.g., unhandled exceptions or file read/write errors.                                                |
 | `mark`  | `.mark`  | Grey    | Necessary statements unrelated to runtime state. Always output unless logging is turned off, e.g., copyright notices and warnings.                 |
 
-### Emphasis Format `~[]` and `~{}`
+### Emphasis Format `~[field]`, `~{value}` and `~<value|value-type>`
 
-Hades comes with two built‑in emphasis formats based on control characters, which are automatically rendered as styled text in the terminal:
+Hades comes with three built‑in emphasis formats based on control characters, which are automatically rendered as styled text in the terminal:
 
-| Syntax | Purpose      | Rendering (highlight on)           | Rendering (highlight off)                  |
-| :----- | :----------- | :--------------------------------- | :----------------------------------------- |
-| `~[]`  | Noun / term  | Underline + bold                   | Plain text (`~[]` removed)                 |
-| `~{}`  | Value / data | White + wrapped in square brackets | Wrapped in square brackets (`~{}` removed) |
+| Syntax                 | Purpose             | Rendering (highlight on)                       | Rendering (highlight off)                         |
+| :--------------------- | :------------------ | :--------------------------------------------- | :------------------------------------------------ |
+| `~[field]`             | Field / noun / term | Underline + bold                               | Plain text (`~[` and `]` removed)                 |
+| `~{value}`             | Value / data        | White + wrapped in square brackets             | Wrapped in square brackets (`~{` and `}` removed) |
+| `~<value\|value-type>` | Value + value type  | Value in white + value type in grey + brackets | Wrapped in square brackets (`~<` and `>` removed) |
+
+The value‑type variant starts with `~<` and ends with `>`; inside it, the value and the value type are separated by `|`. Filling the value type with the `vof` type identifier is recommended (see `vtof` / `wvt` below).
 
 ```javascript
 G.info('Server', 'start', '✔ ~[listen port]~{8080}');
 // Highlight on:  [time][INFO] Server => start  ✔ listen port(underline+bold)[8080](white)
 // Highlight off: [time][INFO] Server => start  ✔ listen port[8080]
+
+G.info('Server', 'start', '✔ ~[listen port]~<8080|number>');
+// Highlight on:  [time][INFO] Server => start  ✔ listen port(underline+bold)[8080(white)|number(grey)]
+// Highlight off: [time][INFO] Server => start  ✔ listen port[8080|number]
 ```
 
-- When highlighting is disabled (`willHighlight: false`), the control characters `~[]` and `~{}` are automatically stripped, leaving plain semantic text.
-- To output a literal `~[` or `~{`, escape it with a backslash: `\~[` `\~{`.
-- It is generally not recommended to use `~[]` alone in the `where` part unless combined with a value.
+- When highlighting is disabled (`willHighlight: false`), the control characters are automatically stripped, leaving plain semantic text.
+- To output a literal `~[`, `~{` or `~<`, escape it with a backslash: `\~[` `\~{` `\~<`.
+- It is generally not recommended to use `~[field]` alone in the `where` part unless combined with a value.
+
+### Emphasis Helpers `wf` / `wv` / `wvt` / `vtof`
+
+Manually assembling control characters is error‑prone, so Hades additionally exports four pure functions that generate emphasis fragments:
+
+```javascript
+import { Hades, vtof, wf, wv, wvt } from '@danor-lib/hades';
+```
+
+| Function      | Purpose                                                                             | Syntax generated       |
+| :------------ | :---------------------------------------------------------------------------------- | :--------------------- |
+| `wf(field)`   | Wraps a **field** / noun / term                                                     | `~[field]`             |
+| `wv(value)`   | Wraps a **value**                                                                   | `~{value}`             |
+| `wvt(value)`  | Wraps a value **together with its `vof` type**                                      | `~<value\|value-type>` |
+| `vtof(value)` | Returns the value combined with its `vof` type, **without** any emphasis characters | None (plain string)    |
+
+```javascript
+wf('listen port');    // '~[listen port]'
+wv(8080);             // '~{8080}'
+
+wvt(8080);            // '~<8080|number>'
+wvt('abc');           // '~<abc|string(3)>'
+wvt([1, 2]);          // '~<1,2|array(2)>'
+wvt(null);            // '~<null|null>'
+wvt({ a: 1 });        // '~<{"a":1}|object>'
+
+vtof(8080);           // '8080|number'
+vtof('abc');          // 'abc|string(3)'
+vtof([1, 2]);         // '1,2|array(2)'
+vtof(null);           // 'null|null'
+```
+
+> `wf`, `wv` and `wvt` correspond to the three emphasis formats above: `~[field]` (underline + bold), `~{value}` (white + square brackets) and `~<value|value-type>` (value in white + value type in grey + square brackets).
+> `vtof` is the underlying implementation of `wvt`; it returns a `value|value-type` string without control characters, and can be used on its own outside of logging.
+> The value type comes from `vof` of [`@danor-lib/error`](https://www.npmjs.com/package/@danor-lib/error), e.g. `number`, `string(3)`, `array(2)`, `null`. Objects are `JSON.stringify`-ed first and fall back to `<stringify-failed object>` when serialisation fails.
+
+These functions are also attached to `Hades` / `Melinoe` / `Zagreus` instances (`vtof` is not attached), so they can be used directly inside an existing logging context:
+
+```javascript
+const G = new Hades();
+
+G.info('Server', 'start', `✔ ${wf('listen port')}${wvt(8080)}`);
+G.info('Server', 'start', `✔ ${G.wf('listen port')}${G.wvt(8080)}`);
+// Both are equivalent, both output: ✔ listen port[8080|number]
+
+const dbLog = G.where('Database');
+dbLog.info('connect', `${dbLog.wvt('localhost:3306')}`);
+```
 
 ### Output Modes
 
@@ -154,20 +209,20 @@ Creates a Hades instance.
 
 - **Parameters** `options` `{Object}` — Optional. All properties are optional.
 
-| Option                   | Type      | Default                | Description                                                                                         |
-| :----------------------- | :-------- | :--------------------- | :-------------------------------------------------------------------------------------------------- |
-| `name`                   | `string`  | `'default'`            | Instance name, also used as the log file name prefix.                                               |
-| `level`                  | `string`  | `'all'`                | Minimum log level; messages below this level are not output.                                        |
-| `dirn`                   | `string`  | `process.cwd()`        | Directory for log files. If not specified, **logs are not written to files** — only console output. |
-| `eol`                    | `string`  | `os.EOL`               | End‑of‑line character for log files.                                                                |
-| `templateTime`           | `string`  | `'MM-DD HH:mm:ss:SSS'` | Time format template; syntax from [dayjs](https://day.js.org/docs/en/display/format).               |
-| `sizeFileLogMax`         | `number`  | `20971520` (20MB)      | Maximum size in bytes for a single log file; rotation occurs when exceeded.                         |
-| `numberFileLogBackupMax` | `number`  | `0`                    | Number of old log files to keep; `0` means none.                                                    |
-| `willHighlight`          | `boolean` | `true`                 | Whether to enable highlighting for `~[]` / `~{}` emphasis formats.                                  |
-| `willColorLevel`         | `boolean` | `true`                 | Whether to output different colours based on log level.                                             |
-| `willOutputInitInfo`     | `boolean` | `true`                 | Whether to output an info log after initialisation completes.                                       |
-| `willConsoleOutputError` | `boolean` | `false`                | Whether to output error stacks to the console (by default only written to file).                    |
-| `willInitImmediate`      | `boolean` | `true`                 | Whether to initialise immediately after construction. If `false`, call `.init()` manually.          |
+| Option                   | Type      | Default                | Description                                                                                           |
+| :----------------------- | :-------- | :--------------------- | :---------------------------------------------------------------------------------------------------- |
+| `name`                   | `string`  | `'default'`            | Instance name, also used as the log file name prefix.                                                 |
+| `level`                  | `string`  | `'all'`                | Minimum log level; messages below this level are not output.                                          |
+| `dirn`                   | `string`  | `process.cwd()`        | Directory for log files. If not specified, **logs are not written to files** — only console output.   |
+| `eol`                    | `string`  | `os.EOL`               | End‑of‑line character for log files.                                                                  |
+| `templateTime`           | `string`  | `'MM-DD HH:mm:ss:SSS'` | Time format template; syntax from [dayjs](https://day.js.org/docs/en/display/format).                 |
+| `sizeFileLogMax`         | `number`  | `20971520` (20MB)      | Maximum size in bytes for a single log file; rotation occurs when exceeded.                           |
+| `numberFileLogBackupMax` | `number`  | `0`                    | Number of old log files to keep; `0` means none.                                                      |
+| `willHighlight`          | `boolean` | `true`                 | Whether to enable highlighting for `~[field]` / `~{value}` / `~<value\|value-type>` emphasis formats. |
+| `willColorLevel`         | `boolean` | `true`                 | Whether to output different colours based on log level.                                               |
+| `willOutputInitInfo`     | `boolean` | `true`                 | Whether to output an info log after initialisation completes.                                         |
+| `willConsoleOutputError` | `boolean` | `false`                | Whether to output error stacks to the console (by default only written to file).                      |
+| `willInitImmediate`      | `boolean` | `true`                 | Whether to initialise immediately after construction. If `false`, call `.init()` manually.            |
 
 ```javascript
 // Default configuration
@@ -301,7 +356,7 @@ dbConnectLog.error(new Error('timeout'));
 // Equivalent to G.error('Database', 'connect', new Error('timeout'))
 ```
 
-> Both `Melinoe` and `Zagreus` support the full set of logging methods: normal (`.info`), inline update (`.infoU`), end update (`.infoD`), and `fatalE`.
+> Both `Melinoe` and `Zagreus` support the full set of logging methods: normal (`.info`), inline update (`.infoU`), end update (`.infoD`), and `fatalE`, and also carry the emphasis helpers `.wf` / `.wv` / `.wvt`.
 
 ## Advanced Features
 
@@ -342,7 +397,7 @@ In terminals that do not support ANSI control characters (e.g., some CI environm
 const log = new Hades({ willHighlight: false });
 ```
 
-When disabled, the control characters `~[]` and `~{}` are stripped, leaving only plain semantic text.
+When disabled, the control characters `~[field]`, `~{value}` and `~<value|value-type>` are stripped, leaving only plain semantic text.
 
 ### 3. Level Colours
 
@@ -417,7 +472,7 @@ G.error('~[Startup]', 'initialisation error', top);
 
 ### 8. Escaping Special Characters
 
-To output literal `~[` or `~{`, escape them with a backslash:
+To output literal `~[`, `~{` or `~<`, simply escape them with a backslash:
 
 ```javascript
 G.info('Note', 'syntax', 'use \\~[term\\] and \\~{value\\}');

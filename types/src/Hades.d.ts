@@ -27,6 +27,20 @@ export const configureStatic: Log4JS.Configuration;
  */
 export class Hades {
 	constructor(option?: HadesOption);
+
+	/**
+	 * Wrap a field for highlighting in Hades
+	 */
+	wf: (field: unknown) => string;
+	/**
+	 * Wrap a value for highlighting in Hades
+	 */
+	wv: (value: unknown) => string;
+	/**
+	 * Wrap a value and its `vof` type for highlighting in Hades
+	 */
+	wvt: (value: unknown) => string;
+
 	/**
 	 * Specifies the name of the Hades instance, which is also the log file name by default
 	 * @default 'default'
@@ -383,6 +397,19 @@ export class Hades {
 /** typed `Hades` with `where` preseted */
 export class Melinoe {
 	/**
+	 * Wrap a field for highlighting in Hades
+	 */
+	wf: (field: unknown) => string;
+	/**
+	 * Wrap a value for highlighting in Hades
+	 */
+	wv: (value: unknown) => string;
+	/**
+	 * Wrap a value and its `vof` type for highlighting in Hades
+	 */
+	wvt: (value: unknown) => string;
+
+	/**
 	 * @param {Hades} hades
 	 * @param {string} where
 	 */
@@ -632,6 +659,19 @@ export class Melinoe {
 
 /** typed `Hades` with `where` and `what` preseted */
 export class Zagreus {
+	/**
+	 * Wrap a field for highlighting in Hades
+	 */
+	wf: (field: unknown) => string;
+	/**
+	 * Wrap a value for highlighting in Hades
+	 */
+	wv: (value: unknown) => string;
+	/**
+	 * Wrap a value and its `vof` type for highlighting in Hades
+	 */
+	wvt: (value: unknown) => string;
+
 	/**
 	 * @param {Hades} hades
 	 * @param {string} where

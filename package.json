@@ -1,6 +1,6 @@
 {
 	"name": "@danor-lib/hades",
-	"version": "8.1.0",
+	"version": "8.2.0",
 	"description": "Log library based on log4js-node",
 	"author": "DanoR",
 	"license": "MIT",
@@ -26,9 +26,9 @@
 	"main": "./index.js",
 	"types": "./types/index.d.ts",
 	"dependencies": {
-		"@danor-lib/error": "^2.0.1",
-		"chalk": "^5.6.2",
-		"dayjs": "^1.11.21",
+		"@danor-lib/error": "^3.0.0",
+		"chalk": "^6.0.0",
+		"dayjs": "^1.11.23",
 		"log-update": "^8.0.0",
 		"log4js": "^6.9.1",
 		"streamroller": "^3.1.5"
@@ -36,8 +36,8 @@
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
-		"@types/node": "^26.1.1",
-		"eslint": "^10.7.0",
-		"globals": "^17.7.0"
+		"@types/node": "^26.4.0",
+		"eslint": "^10.9.1",
+		"globals": "^17.11.0"
 	}
 }

@@ -17,6 +17,7 @@ Day.extend(DayCustomParseFormatPlugin);
 export const highlight = (string, willHighlight = true) =>
 	String(string)
 		.replace(/(?<!\\)~(?<!\\)\[(.*?)(?<!\\)\]/g, willHighlight ? Chalk.underline.bold('$1') : '$1')
+		.replace(/(?<!\\)~<((?:(?!>).)*)(\|(?:(?!>).)*)(?<!\\)>/g, willHighlight ? `${Chalk.white('[$1')}${Chalk.gray(`$2`)}${Chalk.white(']')}` : '[$1$2]')
 		.replace(/(?<!\\)~(?<!\\)\{(.*?)(?<!\\)\}/g, willHighlight ? Chalk.white('[$1]') : '[$1]')
 		.replace(/\\([~{}[\]])/g, '$1');
 

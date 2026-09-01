@@ -5,6 +5,7 @@ import Log4JS from 'log4js';
 import { RichError } from '@danor-lib/error';
 
 import { formatLog } from './formatLog.js';
+import { wf, wv, wvt } from './helper.pure.js';
 
 import { moduleAppenderFile, symbolLogDone, symbolLogUpdate } from './FileAppenderModule.js';
 import { moduleAppenderConsole } from './ConsoleAppenderModule.js';
@@ -39,6 +40,20 @@ export const configureStatic = {
 
 
 export class Hades {
+	/**
+	 * Wrap a field for highlighting in Hades
+	 */
+	wf = wf;
+	/**
+	 * Wrap a value for highlighting in Hades
+	 */
+	wv = wv;
+	/**
+	 * Wrap a value and its `vof` type for highlighting in Hades
+	 */
+	wvt = wvt;
+
+
 	/**
 	 * Specify the name of the Hades instance, which is also the log file name by default
 	 * @type {string}
@@ -723,6 +738,20 @@ export class Hades {
 /** Typed `Hades` with preset `where` */
 export class Melinoe {
 	/**
+	 * Wrap a field for highlighting in Hades
+	 */
+	wf = wf;
+	/**
+	 * Wrap a value for highlighting in Hades
+	 */
+	wv = wv;
+	/**
+	 * Wrap a value and its `vof` type for highlighting in Hades
+	 */
+	wvt = wvt;
+
+
+	/**
 	 * The Hades instance
 	 * @type {Hades}
 	 */
@@ -992,6 +1021,20 @@ export class Melinoe {
 
 /** Typed `Hades` with preset `where` and `what` */
 export class Zagreus {
+	/**
+	 * Wrap a field for highlighting in Hades
+	 */
+	wf = wf;
+	/**
+	 * Wrap a value for highlighting in Hades
+	 */
+	wv = wv;
+	/**
+	 * Wrap a value and its `vof` type for highlighting in Hades
+	 */
+	wvt = wvt;
+
+
 	/**
 	 * The Hades instance
 	 * @type {Hades}
