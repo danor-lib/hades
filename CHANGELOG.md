@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v8.3.0 - 2026.09.02 15
+* refactor: complete refactoring of the highlight function to better avoid escaping issues
+* improve: improve helper functions `wf`, `wv`, `wvt` so that the passed content is correctly escaped
+* improve: improve helper function `vtof`
+  * `vtof` and `wvt` are not related now, the two have similar content, but `vtof` returns content that is not escaped and wrapped
+* regular: bump up dependencies
+
+
 ## v8.2.0 - 2026.09.01 17
 * feat: add the `~<value|value-type>` emphasis syntax, which renders the value in white and the value type in grey inside angle brackets
   * keep the value type segment when highlighting is disabled, so the same text renders consistently in both modes

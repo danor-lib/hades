@@ -14,12 +14,152 @@ Day.extend(DayCustomParseFormatPlugin);
  * @param {boolean} [willHighlight=true]
  * @returns {string}
  */
-export const highlight = (string, willHighlight = true) =>
-	String(string)
-		.replace(/(?<!\\)~(?<!\\)\[(.*?)(?<!\\)\]/g, willHighlight ? Chalk.underline.bold('$1') : '$1')
-		.replace(/(?<!\\)~<((?:(?!>).)*)(\|(?:(?!>).)*)(?<!\\)>/g, willHighlight ? `${Chalk.white('[$1')}${Chalk.gray(`$2`)}${Chalk.white(']')}` : '[$1$2]')
-		.replace(/(?<!\\)~(?<!\\)\{(.*?)(?<!\\)\}/g, willHighlight ? Chalk.white('[$1]') : '[$1]')
-		.replace(/\\([~{}[\]])/g, '$1');
+export const highlight = (string, willHighlight = true) => {
+	const white = (text) => (willHighlight ? Chalk.white(text) : text);
+	const gray = (text) => (willHighlight ? Chalk.gray(text) : text);
+	const boldUnderline = (text) => willHighlight ? Chalk.underline.bold(text) : text;
+
+
+	const length = string.length;
+
+
+	const readUntil = (indexBorn, charDead) => {
+		let content = '';
+
+		for(let indexRead = indexBorn; indexRead < length; indexRead++) {
+			const char = string[indexRead];
+
+			if(char == '\\' && indexRead + 1 < length) {
+				content += string[indexRead + 1];
+				indexRead++;
+			}
+			else if(char == charDead) {
+				return { content, indexNext: indexRead + 1 };
+			}
+			else {
+				content += char;
+			}
+		}
+
+		return null;
+	};
+
+
+	let result = '';
+	for(let index = 0; index < length; index++) {
+		const char = string[index];
+		const charNext = string[index + 1];
+
+
+		// \x -> x
+		if(char == '\\' && index + 1 < length) {
+			result += charNext;
+			index++;
+
+			continue;
+		}
+
+
+		// ~{content}
+		if(char == '~' && charNext == '{') {
+			const field = readUntil(index + 2, '}');
+
+			if(field) {
+				result += boldUnderline(field.content);
+				index = field.indexNext - 1;
+			}
+			else {
+				result += '~{';
+				index += 1;
+			}
+
+			continue;
+		}
+
+
+		// ~[content]
+		if(char == '~' && charNext == '[') {
+			const value = readUntil(index + 2, ']');
+
+			if(value) {
+				result += white(`[${value.content}]`);
+				index = value.indexNext - 1;
+			}
+			else {
+				result += '~[';
+				index += 1;
+			}
+
+			continue;
+		}
+
+		// ~<left|right> → left 白色，|right 灰色，整体方括号包裹
+		if(char == '~' && charNext == '<') {
+			let indexRead = index + 2; // 从 '<' 之后开始扫描
+
+			let value = '';
+			let vtype = null;
+
+			let partNow = '';
+			let hasSplit = false;
+			let isDead = false;
+
+			for(; indexRead < length; indexRead++) {
+				const charRead = string[indexRead];
+
+				if(charRead == '\\' && indexRead + 1 < length) {
+					partNow += string[indexRead + 1];
+					indexRead += 1;
+				}
+				else if(charRead == '>') {
+					if(hasSplit) {
+						vtype = partNow;
+					}
+					else {
+						value = partNow;
+					}
+
+					isDead = true;
+					indexRead += 1;
+
+					break;
+				}
+				else if(charRead == '|' && !hasSplit) {
+					hasSplit = true;
+
+					value = partNow;
+					partNow = '|';
+				}
+				else {
+					partNow += charRead;
+				}
+			}
+
+			if(isDead) {
+				if(vtype === null) {
+					result += white(`[${value}]`);
+				}
+				else {
+					result +=
+						white(`[${value}`) + gray(vtype) + white(']');
+				}
+
+				index = indexRead - 1;
+			}
+			else {
+				result += '~<';
+				index++;
+			}
+			continue;
+		}
+
+
+		result += char;
+	}
+
+
+	return result;
+};
 
 
 

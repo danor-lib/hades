@@ -8,38 +8,53 @@ import { vof } from '@danor-lib/error';
  * @returns {string}
  */
 export const vtof = (value) => {
-	const typeValue = vof(value);
+	const vtype = vof(value);
 
-	if(typeValue == 'object') {
+	if(vtype == 'object') {
 		try {
-			return `${JSON.stringify(value)}|${vof(value)}`;
+			return `${JSON.stringify(value)}|${vtype}`;
 		}
 		catch {
-			return `<stringify-failed object>|${vof(value)}`;
+			return `<stringify-failed object>|${vtype}`;
 		}
 	}
 
-	return `${value}|${vof(value)}`;
+	return `${value}|${vtype}`;
 };
 
+
+export const escapeHighlight = (string) => { return string.replace(/[\\~}\]>|]/g, '\\$&'); };
 
 /**
  * Wrap a field for highlighting in Hades
  * @param {unknown} field
  * @returns {string}
  */
-export const wf = (field) => { return `~[${field}]`; };
+export const wf = (field) => { return `~[${escapeHighlight(field)}]`; };
 
 /**
  * Wrap a value for highlighting in Hades
  * @param {unknown} value
  * @returns {string}
  */
-export const wv = (value) => { return `~{${value}}`; };
+export const wv = (value) => { return `~{${escapeHighlight(value)}}`; };
 
 /**
  * Wrap a value and its `vof` type for highlighting in Hades
  * @param {unknown} value
  * @returns {string}
  */
-export const wvt = (value) => { return `~<${vtof(value)}>`; };
+export const wvt = (value) => {
+	const vtype = vof(value);
+
+	if(vtype == 'object') {
+		try {
+			return `${JSON.stringify(value)}|${vtype}`;
+		}
+		catch {
+			return `<stringify-failed object>|${vtype}`;
+		}
+	}
+
+	return `~<${escapeHighlight(value)}|${vtype}>`;
+};
