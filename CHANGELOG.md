@@ -1,7 +1,12 @@
 # CHANGELOG
 
+## v8.3.1 - 2026.09.02 16
+* fix: fix the issue of style disorder in the `highlight` function
+* improve: improve the way the `highlight` function invokes styling functions
+
+
 ## v8.3.0 - 2026.09.02 15
-* refactor: complete refactoring of the highlight function to better avoid escaping issues
+* refactor: complete refactoring of the `highlight` function to better avoid escaping issues
 * improve: improve helper functions `wf`, `wv`, `wvt` so that the passed content is correctly escaped
 * improve: improve helper function `vtof`
   * `vtof` and `wvt` are not related now, the two have similar content, but `vtof` returns content that is not escaped and wrapped

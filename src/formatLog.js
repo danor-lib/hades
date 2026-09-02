@@ -9,19 +9,25 @@ Day.extend(DayCustomParseFormatPlugin);
 
 
 
+const styler$style = {
+	none: (text) => text,
+	boldUnderline: (text) => Chalk.underline.bold(text),
+	white: (text) => Chalk.white(text),
+	gray: (text) => Chalk.gray(text),
+};
+
 /**
  * @param {string} string
  * @param {boolean} [willHighlight=true]
  * @returns {string}
  */
 export const highlight = (string, willHighlight = true) => {
-	const white = (text) => (willHighlight ? Chalk.white(text) : text);
-	const gray = (text) => (willHighlight ? Chalk.gray(text) : text);
-	const boldUnderline = (text) => willHighlight ? Chalk.underline.bold(text) : text;
+	const boldUnderline = willHighlight ? styler$style.boldUnderline : styler$style.none;
+	const white = willHighlight ? styler$style.white : styler$style.none;
+	const gray = willHighlight ? styler$style.gray : styler$style.none;
 
 
 	const length = string.length;
-
 
 	const readUntil = (indexBorn, charDead) => {
 		let content = '';
@@ -34,7 +40,7 @@ export const highlight = (string, willHighlight = true) => {
 				indexRead++;
 			}
 			else if(char == charDead) {
-				return { content, indexNext: indexRead + 1 };
+				return { content, indexDead: indexRead };
 			}
 			else {
 				content += char;
@@ -60,13 +66,30 @@ export const highlight = (string, willHighlight = true) => {
 		}
 
 
+		// ~[content]
+		if(char == '~' && charNext == '[') {
+			const value = readUntil(index + 2, ']');
+
+			if(value) {
+				result += boldUnderline(value.content);
+				index = value.indexDead;
+			}
+			else {
+				result += '~[';
+				index += 1;
+			}
+
+			continue;
+		}
+
+
 		// ~{content}
 		if(char == '~' && charNext == '{') {
 			const field = readUntil(index + 2, '}');
 
 			if(field) {
-				result += boldUnderline(field.content);
-				index = field.indexNext - 1;
+				result += white(`[${field.content}]`);
+				index = field.indexDead;
 			}
 			else {
 				result += '~{';
@@ -77,23 +100,9 @@ export const highlight = (string, willHighlight = true) => {
 		}
 
 
-		// ~[content]
-		if(char == '~' && charNext == '[') {
-			const value = readUntil(index + 2, ']');
 
-			if(value) {
-				result += white(`[${value.content}]`);
-				index = value.indexNext - 1;
-			}
-			else {
-				result += '~[';
-				index += 1;
-			}
 
-			continue;
-		}
-
-		// ~<left|right> → left 白色，|right 灰色，整体方括号包裹
+		// ~<left|right>
 		if(char == '~' && charNext == '<') {
 			let indexRead = index + 2; // 从 '<' 之后开始扫描
 
