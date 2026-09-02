@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v8.3.2 - 2026.09.02 17
+* fix: fix the issue that helper functions `wf`, `wv`, `wvt` cannot handle `undefined`/`null`
+
+
 ## v8.3.1 - 2026.09.02 16
 * fix: fix the issue of style disorder in the `highlight` function
 * improve: improve the way the `highlight` function invokes styling functions

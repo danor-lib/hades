@@ -22,7 +22,11 @@ export const vtof = (value) => {
 	return `${value}|${vtype}`;
 };
 
-
+/**
+ * Escape special characters in a string for highlighting in Hades
+ * @param {string} string
+ * @returns {string}
+ */
 export const escapeHighlight = (string) => { return string.replace(/[\\~}\]>|]/g, '\\$&'); };
 
 /**
@@ -30,14 +34,14 @@ export const escapeHighlight = (string) => { return string.replace(/[\\~}\]>|]/g
  * @param {unknown} field
  * @returns {string}
  */
-export const wf = (field) => { return `~[${escapeHighlight(field)}]`; };
+export const wf = (field) => { return `~[${escapeHighlight(String(field))}]`; };
 
 /**
  * Wrap a value for highlighting in Hades
  * @param {unknown} value
  * @returns {string}
  */
-export const wv = (value) => { return `~{${escapeHighlight(value)}}`; };
+export const wv = (value) => { return `~{${escapeHighlight(String(value))}}`; };
 
 /**
  * Wrap a value and its `vof` type for highlighting in Hades
@@ -56,5 +60,5 @@ export const wvt = (value) => {
 		}
 	}
 
-	return `~<${escapeHighlight(value)}|${vtype}>`;
+	return `~<${escapeHighlight(String(value))}|${vtype}>`;
 };
